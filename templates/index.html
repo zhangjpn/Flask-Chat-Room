@@ -1,0 +1,162 @@
+﻿{% extends "base.html" %}
+
+{% block head %}
+
+<script type="text/javascript" src="//code.jquery.com/jquery-1.4.2.min.js"></script>
+<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.5/socket.io.min.js"></script>
+
+<!--<script type="text/javascript" src="{{ url_for('static', filename='js/socketio.js') }}"></script>-->
+<script type="text/javascript" charset="utf-8">
+    $(document).ready(function() {
+        // Use a "/test" namespace.
+        // An application can open a connection on multiple namespaces, and
+        // Socket.IO will multiplex all those connections on a single
+        // physical channel. If you don't care about multiple channels, you
+        // can set the namespace to an empty string.
+        namespace = '/chat-room';
+
+        // Connect to the Socket.IO server.
+        // The connection URL has the following format:
+        //     http[s]://<domain>:<port>[/<namespace>]
+        var socket = io.connect(location.protocol + '//' + document.domain + ':' + location.port + namespace);
+
+        // Event handler for new connections.
+        // The callback function is invoked when a connection with the
+        // server is established.
+        socket.on('connect', function() {
+            socket.emit('my_event', {data: 'I\'m connected!'});
+        });
+
+        // Event handler for server sent data.
+        // The callback function is invoked whenever the server emits data
+        // to the client. The data is then displayed in the "Received"
+        // section of the page.
+        socket.on('my_response', function(msg) {
+            if (msg.chat && msg.user){
+                if (msg.user==$('#user').val()){
+                    $('#log').append('<div class="chat-widget-right">'+msg.chat+'</div>'+
+                                '<div class="chat-widget-name-right">'+msg.user+'</div>'
+                                );
+                }else{
+                    $('#log').append('<div class="chat-widget-left">' + $('<div/>').text(msg.chat).html());
+                    $('#log').append('<div class="chat-widget-name-left">' + $('<div/>').text(msg.user).html());
+                }
+            }
+        });
+
+        // Interval function that tests message latency by sending a "ping"
+        // message. The server then responds with a "pong" message and the
+        // round trip time is measured.
+        var ping_pong_times = [];
+        var start_time;
+        window.setInterval(function() {
+            start_time = (new Date).getTime();
+            socket.emit('my_ping');
+        }, 1000);
+
+        // Handler for the "pong" message. When the pong is received, the
+        // time from the ping is stored, and the average of the last 30
+        // samples is average and displayed.
+        socket.on('my_pong', function() {
+            var latency = (new Date).getTime() - start_time;
+            ping_pong_times.push(latency);
+            ping_pong_times = ping_pong_times.slice(-30); // keep last 30 samples
+            var sum = 0;
+            for (var i = 0; i < ping_pong_times.length; i++)
+                sum += ping_pong_times[i];
+            $('#ping-pong').text(Math.round(10 * sum / ping_pong_times.length) / 10);
+        });
+
+        // Handlers for the different forms in the page.
+        // These accept data from the user and send it to the server in a
+        // variety of ways
+        $('form#emit').submit(function(event) {
+            socket.emit('my_event', {data: $('#emit_data').val()});
+            return false;
+        });
+        $('form#broadcast').submit(function(event) {
+            //socket.emit('my_broadcast_event', {data: $('#broadcast_data').val()});
+            socket.emit('my_broadcast_event', {chat: $('#broadcast_data').val(), user: $('#user').val()});
+            return false;
+        });
+        $('form#join').submit(function(event) {
+            socket.emit('join', {room: $('#join_room').val()});
+            return false;
+        });
+        $('form#leave').submit(function(event) {
+            socket.emit('leave', {room: $('#leave_room').val()});
+            return false;
+        });
+        $('form#send_room').submit(function(event) {
+            socket.emit('my_room_event', {room: $('#room_name').val(), data: $('#room_data').val()});
+            return false;
+        });
+        $('form#close').submit(function(event) {
+            socket.emit('close_room', {room: $('#close_room').val()});
+            return false;
+        });
+        $('form#disconnect').submit(function(event) {
+            socket.emit('disconnect_request');
+            return false;
+        });
+    });
+</script>
+{% endblock %}
+
+{% block content %}
+
+        <!-- /. NAV SIDE  -->
+        <div id="page-wrapper">
+            <div id="page-inner">
+                <div class="row">
+                    <div class="col-md-12">
+                        <h1 class="page-head-line">聊天室</h1>
+                        <h1 class="page-subhead-line">This is dummy text , you can replace it with your original text. </h1>
+
+                    </div>
+                </div>
+                <!-- /. ROW  -->
+                <div class="row">
+                   <div class="col-md-6">
+
+                        <div class="panel panel-success">
+                            <div class="panel-heading">
+                               Message Box
+                            </div>
+                            <div class="panel-body" style="padding: 0px;">
+                                <div class="chat-widget-main">
+
+                                    <div class="chat-widget-name-left">
+                                        <div id="log"></div>
+                                    </div>
+
+                                </div>
+                            </div>
+                            <div class="panel-footer">
+                                <form id="broadcast" method="POST" action='#'>
+                                <div class="input-group">
+                                    <input type="text" name="user" id="user" class="form-control"  placeholder="Name"/>
+                                    <input type="text" name="broadcast_data" id="broadcast_data" class="form-control" placeholder="Enter Message" />
+                                    <span class="input-group-btn">
+                                        <button class="btn btn-success" type="submit">发送</button>
+                                    </span>
+
+                                </div>
+                                    </form>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+                <!-- /. ROW  -->
+                 <div class="row">
+                   <div class="col-md-12">
+                       <div class="panel panel-primary">
+                    </div>
+            <!-- /. PAGE INNER  -->
+        </div>
+        <!-- /. PAGE WRAPPER  -->
+    </div>
+            </div>
+
+{% endblock %}
