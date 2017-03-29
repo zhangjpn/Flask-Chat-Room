@@ -1,4 +1,5 @@
-$(document).ready(function() {
+
+function() {
     // Use a "/test" namespace.
     // An application can open a connection on multiple namespaces, and
     // Socket.IO will multiplex all those connections on a single
@@ -80,4 +81,5 @@ $(document).ready(function() {
         socket.emit('disconnect_request');
         return false;
     });
-});
+}
+

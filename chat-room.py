@@ -18,7 +18,8 @@ bootstrap.init_app(app)
 app.config['SECRET_KEY'] = 'secret!'
 socketio = SocketIO(app, async_mode=async_mode)
 thread = None
-
+app.jinja_env.variable_start_string = '{{ '
+app.jinja_env.variable_end_string = ' }}'
 
 def background_thread():
     """Example of how to send server generated events to clients."""
@@ -29,7 +30,6 @@ def background_thread():
         socketio.emit('my_response',
                       {'data': 'Server generated event', 'count': count},
                       namespace='/chat-room')
-
 
 @app.route('/')
 def index():

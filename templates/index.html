@@ -5,6 +5,51 @@
 <script type="text/javascript" src="//code.jquery.com/jquery-1.4.2.min.js"></script>
 <script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.5/socket.io.min.js"></script>
 
+<script type="text/javascript" charset="utf-8">
+
+    var username=document.cookie.split(";")[0].split("=")[1];
+
+    // 设置cookie
+    function setCookie(cname, cvalue, exdays) {
+        var d = new Date();
+        d.setTime(d.getTime() + (exdays*24*60*60*1000));
+        var expires = "expires="+d.toUTCString();
+        document.cookie = cname + "=" + cvalue + "; " + expires;
+    }
+
+    // 获取cookie
+    function getCookie(cname) {
+        var name = cname + "=";
+        var ca = document.cookie.split(';');
+        for(var i=0; i<ca.length; i++) {
+            var c = ca[i];
+            while (c.charAt(0)==' ') c = c.substring(1);
+            if (c.indexOf(name) != -1) return c.substring(name.length, c.length);
+        }
+        return "";
+    }
+
+    // 清除cookie
+    function clearCookie(name) {
+        setCookie(name, "", -1);
+    }
+    // 检查cookie
+    function checkCookie() {
+        var user = getCookie("username");
+        if (user !== "") {
+            //alert("Welcome again " + user);
+
+        } else {
+            user = prompt("Please enter your name:", "");
+            if (user !== "" && user !== null) {
+                setCookie("username", user, 365);
+            }
+        }
+    }
+    checkCookie();
+
+</script>
+
 <!--<script type="text/javascript" src="{{ url_for('static', filename='js/socketio.js') }}"></script>-->
 <script type="text/javascript" charset="utf-8">
     $(document).ready(function() {
@@ -33,7 +78,7 @@
         // section of the page.
         socket.on('my_response', function(msg) {
             if (msg.chat && msg.user){
-                if (msg.user==$('#user').val()){
+                if (msg.user==getCookie("username")){
                     $('#log').append('<div class="chat-widget-right">'+msg.chat+'</div>'+
                                 '<div class="chat-widget-name-right">'+msg.user+'</div>'
                                 );
@@ -74,11 +119,15 @@
             socket.emit('my_event', {data: $('#emit_data').val()});
             return false;
         });
+
         $('form#broadcast').submit(function(event) {
             //socket.emit('my_broadcast_event', {data: $('#broadcast_data').val()});
-            socket.emit('my_broadcast_event', {chat: $('#broadcast_data').val(), user: $('#user').val()});
+            //socket.emit('my_broadcast_event', {chat: $('#broadcast_data').val(), user: $('#user').val()});
+            socket.emit('my_broadcast_event', {chat: $('#broadcast_data').val(), user: getCookie("username")});
+
             return false;
         });
+
         $('form#join').submit(function(event) {
             socket.emit('join', {room: $('#join_room').val()});
             return false;
@@ -87,14 +136,17 @@
             socket.emit('leave', {room: $('#leave_room').val()});
             return false;
         });
+
         $('form#send_room').submit(function(event) {
             socket.emit('my_room_event', {room: $('#room_name').val(), data: $('#room_data').val()});
             return false;
         });
+
         $('form#close').submit(function(event) {
             socket.emit('close_room', {room: $('#close_room').val()});
             return false;
         });
+
         $('form#disconnect').submit(function(event) {
             socket.emit('disconnect_request');
             return false;
@@ -117,7 +169,7 @@
                 </div>
                 <!-- /. ROW  -->
                 <div class="row">
-                   <div class="col-md-6">
+                   <div class="col-md-9">
 
                         <div class="panel panel-success">
                             <div class="panel-heading">
@@ -135,7 +187,7 @@
                             <div class="panel-footer">
                                 <form id="broadcast" method="POST" action='#'>
                                 <div class="input-group">
-                                    <input type="text" name="user" id="user" class="form-control"  placeholder="Name"/>
+                                    <!--<input type="text" name="user" id="user" class="form-control"  placeholder="Name"/>-->
                                     <input type="text" name="broadcast_data" id="broadcast_data" class="form-control" placeholder="Enter Message" />
                                     <span class="input-group-btn">
                                         <button class="btn btn-success" type="submit">发送</button>
