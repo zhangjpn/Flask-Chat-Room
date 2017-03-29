@@ -21,32 +21,47 @@ thread = None
 app.jinja_env.variable_start_string = '{{ '
 app.jinja_env.variable_end_string = ' }}'
 
+
 def background_thread():
     """Example of how to send server generated events to clients."""
     count = 0
     while True:
-        socketio.sleep(10)
+        socketio.sleep(3)
         count += 1
         socketio.emit('my_response',
-                      {'data': 'Server generated event', 'count': count},
-                      namespace='/chat-room')
+                      {'data': 'Server generated event',
+                       'count': count,
+                       'onlineUser': chatRoom.online_users},
+                      namespace='/chat-room'
+                      )
 
 @app.route('/')
 def index():
     return render_template('index.html', async_mode=socketio.async_mode)
 
 
-class MyNamespace(Namespace):
+class ChatRoom(Namespace):
+
+    online_users=[]
+
     def on_my_event(self, message):
         session['receive_count'] = session.get('receive_count', 0) + 1
         emit('my_response',
-             {'data': message.get('data'), 'count': session['receive_count']})
+            {'count': session['receive_count'],
+                'data': message.get('data'),
+                'username': message.get('username'),}
+             )
+        if message.get('username') not in self.online_users:
+            self.online_users.append(message.get('username'))
+
 
     def on_my_broadcast_event(self, message):
         session['receive_count'] = session.get('receive_count', 0) + 1
         emit('my_response',
-             #{'data': message['data'], 'count': session['receive_count']},
-             {'data': message.get('data'), 'count': session['receive_count'], 'chat':message.get('chat'), 'user': message.get('user')},
+             {'count': session['receive_count'],
+                'data': message.get('data'),
+                'chat': message.get('chat'),
+                'username': message.get('username')},
              broadcast=True)
 
     def on_join(self, message):
@@ -57,12 +72,14 @@ class MyNamespace(Namespace):
               'count': session['receive_count']}
              )
 
+
     def on_leave(self, message):
         leave_room(message['room'])
         session['receive_count'] = session.get('receive_count', 0) + 1
         emit('my_response',
              {'data': 'In rooms: ' + ', '.join(rooms()),
-              'count': session['receive_count']})
+              'count': session['receive_count']}
+             )
 
     def on_close_room(self, message):
         session['receive_count'] = session.get('receive_count', 0) + 1
@@ -83,6 +100,7 @@ class MyNamespace(Namespace):
              {'data': 'Disconnected!', 'count': session['receive_count']})
         disconnect()
 
+
     def on_my_ping(self):
         emit('my_pong')
 
@@ -92,12 +110,14 @@ class MyNamespace(Namespace):
             thread = socketio.start_background_task(target=background_thread)
         emit('my_response', {'data': 'Connected', 'count': 0})
 
+
     def on_disconnect(self):
         print('Client disconnected', request.sid)
+        self.online_users.remove(session.get('username'))
 
-
-socketio.on_namespace(MyNamespace('/chat-room'))
+chatRoom = ChatRoom('/chat-room')
+socketio.on_namespace(chatRoom)
 
 
 if __name__ == '__main__':
-    socketio.run(app, debug=True)
+    socketio.run(app, debug=True, host="0.0.0.0")

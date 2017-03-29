@@ -48,17 +48,16 @@
         <nav class="navbar-default navbar-side" role="navigation">
             <div class="sidebar-collapse">
                 <ul class="nav" id="main-menu">
-                    <li>
+                    <li  v-for="username in items">
+
                         <div class="user-img-div">
-                            <!--<img src="assets/img/user.png" class="img-thumbnail" />-->
                             <img src="{{ url_for('static', filename='assets/img/user.png') }}" class="img-thumbnail" />
 
-                            <div class="inner-text">
-                                <div id="username">
+                            <div class="inner-text" id="username">
                                     {{username}}
-                                </div>
                             </div>
                         </div>
+
 
                     </li>
                 </ul>
@@ -83,19 +82,7 @@
 <!--<script src="assets/js/custom.js"></script>-->
 <script src="{{ url_for('static', filename='assets/js/custom.js') }}"></script>
 
-<script src="https://unpkg.com/vue/dist/vue.js"></script>
-<script type="text/javascript">
-    // ES6 模板字符串
-    //Vue.config.delimiters = ['${','}']// 修改文本插值的定界符。
-    //Vue.config.unsafeDelimiters = ['{!!','!!}']// 修改原生 HTML 插值的定界符。
-    new Vue({
-      el: '#username',
-      data: {
-        //message: 'Hello Vue.js!'
-        username: getCookie('username')
-      }
-    })
-</script>
+
 
 </body>
 </html>
